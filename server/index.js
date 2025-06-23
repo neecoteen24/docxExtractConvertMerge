@@ -35,12 +35,13 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-// POST endpoint to handle three file uploads
+// POST endpoint to handle file uploads with form data
 app.post('/upload', upload.array('files', 3), async (req, res) => {
   if (!req.files || req.files.length !== 3) {
     return res.status(400).json({ error: 'Please upload exactly three files.' });
   }
 
+  const formData = req.body;
   let results = [];
   let pdfFiles = [];
 
@@ -123,7 +124,16 @@ app.post('/upload', upload.array('files', 3), async (req, res) => {
     try {
       mergedPdfPath = path.join('uploads', 'merged_output.pdf');
       const mergedPdfAbsPath = path.join(__dirname, mergedPdfPath);
-      execFileSync('python', ['mergePdfs.py', mergedPdfAbsPath, ...pdfFiles]);
+      
+      // Create table PDF and merge with other PDFs
+      execFileSync('python', [
+        'mergePdfs.py',
+        'create_and_merge_with_table',
+        mergedPdfAbsPath,
+        JSON.stringify(formData),
+        ...pdfFiles
+      ]);
+      
       mergedPdfPath = '/' + mergedPdfPath.replace(/\\/g, '/');
     } catch (err) {
       mergedPdfPath = '';
